@@ -10,9 +10,12 @@ For a better understanding about either the algorithm or the method, please chec
 
 ## Installation
 
+You can install the uwTOPSIS library directly from GitHub:
+
 ```terminal
-pip install uwTOPSIS
-```
+git clone https://github.com/Aaron-AALG/uwTOPSIS.git
+python3 -m pip install -e uwTOPSIS
+```  
 
 ## Usage
 
