@@ -16,7 +16,7 @@ pip install uwTOPSIS
 
 ## Usage
 
-uwTOPSIS is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example based on the paper abovementioned (V. Liern et. al 2020), although we only use three alternatives and four criteria:
+uwTOPSIS is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example based on the paper abovementioned (V. Liern et. al 2020), in which we only use three alternatives and four criteria:
 
 ```python
 import pandas as pd
