@@ -10,13 +10,18 @@ For a better understanding about either the algorithm or the method, please chec
 
 ## Installation
 
-You can install the uwTOPSIS library directly from GitHub:
+You can install the uwTOPSIS library from GitHub:
 
 ```terminal
 git clone https://github.com/Aaron-AALG/uwTOPSIS.git
 python3 -m pip install -e uwTOPSIS
 ```  
-
+  
+You can also install it directly from PyPI:
+```terminal
+pip install uwTOPSIS
+```  
+  
 ## Usage
 
 uwTOPSIS is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example based on the paper abovementioned (V. Liern et. al 2020), in which we only use three alternatives and four criteria:
