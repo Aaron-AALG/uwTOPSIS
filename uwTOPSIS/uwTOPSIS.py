@@ -92,7 +92,6 @@ def distance(x, v, p):
     return d
 
 def R(data, Ideal, Antiideal, p):
-    # ????? Introduce data[i] instead of the loop ????? 
     d_Ideal = array([distance(x, Ideal, p) for x in data])
     d_Antiideal = array([distance(x, Antiideal, p) for x in data])
     R = d_Antiideal/(d_Ideal + d_Antiideal)
