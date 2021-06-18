@@ -22,6 +22,39 @@ You can also install it directly from PyPI:
 pip install uwTOPSIS
 ```  
   
+## Input-Output arguments
+
+**Input**:
+>    data: dataframe which contains the alternatives and the criteria.
+>
+>    directions: array with the optimal direction of the criteria.
+>    
+>    L: array with the lower bounds of the weigths.
+>    
+>    U: array with the upper bounds of the weigths.
+>    
+>    norm: normalization method for the data, whether "euclidean", "gauss", "minmax", "none". (By default norm = "euclidean").
+>    
+>    p: integer value for the L-p distance. (By default p=2).
+>    
+>    w0: array with the initial guess of the weights. (By default w0=[]).
+>    
+>    alpha: value of the convex lineal combination of the uwTOPSIS score. (By default alpha=1/2).
+>    
+>    forceideal: logical argument to indicate whether to force the ideal solution. If true, ideal solution 
+>    is 1-array and antiideal is 0-array. (By default forceideal = False).
+>    
+>    display: logical argument to indicate whether to show print convergence messages or not. (By default display = False).
+
+**Output**:
+
+Dictionary which contains three keys.
+>    Ranking: List with R_min and R_max scores in regard of the optimal weights, plus the uwTOPSIS score.
+>
+>    Weights_min: List with the weights that minimizes the R score.
+>
+>    Weights_max: List with the weights that maximizes the R score.
+  
 ## Usage
 
 uwTOPSIS is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example based on the paper abovementioned (V. Liern et. al 2020), in which we only use three alternatives and four criteria:
