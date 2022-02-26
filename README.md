@@ -7,7 +7,7 @@
 
 The Un-Weighted Technique for Order Preference by Similarity to Ideal Solution (uwTOPSIS) ranks decision alternatives based on the classical TOPSIS approach, however this method does not require the introduction of a priori weights.
 
-As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the function of relative proximity (R) is an operator which are optimized as two mathematical programming problems of maximize ($R_L$) and minimize ($R_U$), considering weights as ariables. Finally, per each alternative, we get the intervals $[R_L, R_U]$ so we can rank them in accordance with a determined comparison method.
+As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the function of relative proximity (R) is an operator which are optimized as two mathematical programming problems of maximize (R_L) and minimize (R_U), considering weights as ariables. Finally, per each alternative, we get the intervals [R_L, R_U] so we can rank them in accordance with a determined comparison method.
 
 For a better understanding about either the algorithm or the method, please check:
 
