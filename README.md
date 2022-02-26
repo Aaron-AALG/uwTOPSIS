@@ -1,12 +1,21 @@
 # Unweighted TOPSIS method
 
+![python-version](https://img.shields.io/badge/python->=3.8-green.svg)
+[![pypi-version](https://img.shields.io/pypi/v/uwtopsis.svg)](https://pypi.python.org/pypi/uwtopsis/)
+![license](https://img.shields.io/pypi/l/uwtopsis.svg)
+[![Downloads](https://static.pepy.tech/personalized-badge/uwtopsis?period=total&units=international_system&left_color=grey&right_color=orange&left_text=Downloads)](https://pepy.tech/project/uwtopsis)
+
 The Un-Weighted Technique for Order Preference by Similarity to Ideal Solution (uwTOPSIS) ranks decision alternatives based on the classical TOPSIS approach, however this method does not require the introduction of a priori weights.
 
-As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the function of relative proximity (_R_) is an operator which are optimized as two mathematical programming problems of maximize (_R<sub>L_) and minimize (_R<sub>U_), considering weights as variables. Finally, per each alternative, we get the intervals [_R<sub>L_, _R<sub>U_] so we can rank them in accordance with a determined comparison method.
+As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the function of relative proximity (R) is an operator which are optimized as two mathematical programming problems of maximize (R_L) and minimize (R_U), considering weights as ariables. Finally, per each alternative, we get the intervals [R_L, R_U]$ so we can rank them in accordance with a determined comparison method.
 
 For a better understanding about either the algorithm or the method, please check:
 
 [V. Liern and B. Pérez-Gladish, “Multiple criteria ranking method based on functional proximity index: un-weighted topsis,” _Annals of Operations Research_, 2020.](https://doi.org/10.1007/s10479-020-03718-1)
+
+Motivation of this repository is the application of uwTOPSIS to relative large datasets as we discussed in the following paper:
+
+[O. Blasco-Blasco, M. Liern-García, A. López-García, S.E. Parada Rico (2021), "An Academic Performance Indicator Using Flexible Multi-Criteria Methods";  Mathematics, Applications of Quantitative Methods in Business and Economics Research.](https://doi.org/10.3390/math9192396)
 
 ## Installation
 
@@ -15,36 +24,49 @@ You can install the uwTOPSIS library from GitHub:
 ```terminal
 git clone https://github.com/Aaron-AALG/uwTOPSIS.git
 python3 -m pip install -e uwTOPSIS
-```  
-  
+```
+
 You can also install it directly from PyPI:
+
 ```terminal
 pip install uwTOPSIS
-```  
-  
-## Input-Output arguments
+```
+
+## Input-Output
 
 ### Input
 
-* **data**: dataframe which contains the alternatives and the criteria.
-* **directions**: array with the optimal direction of the criteria.
-* **L**: array with the lower bounds of the weigths.
-* **U**: array with the upper bounds of the weigths.
-* **norm**: normalization method for the data, whether "euclidean", "gauss", "minmax", "none". (By default norm = "euclidean")
-* **p**: integer value for the L-p distance. (By default p=2)
-* **w0**: array with the initial guess of the weights. (By default w0=[])
-* **alpha**: value of the convex lineal combination of the uwTOPSIS score. (By default alpha=1/2)
-* **forceideal**: logical argument to indicate whether to force the ideal solution. If true, ideal solution is 1-array and antiideal is 0-array. (By default forceideal = False)
-* **display**: logical argument to indicate whether to show print convergence messages or not. (By default display = False)
+> **data**: dataframe which contains the alternatives and the criteria.
+>
+> **directions**: array with the optimal direction of the criteria.
+>
+> **L**: array with the lower bounds of the weigths.
+>
+> **U**: array with the upper bounds of the weigths.
+>
+> **norm**: normalization method for the data, whether "euclidean", "gauss", "minmax", "none". (By default norm = "euclidean")
+>
+> **p**: integer value for the L-p distance. (By default p=2)
+>
+> **w0**: array with the initial guess of the weights. (By default w0=[])
+>
+> **alpha**: value of the convex lineal combination of the uwTOPSIS score. (By default alpha=1/2)
+>
+> **forceideal**: logical argument to indicate whether to force the ideal solution. If true, ideal solution
+> is 1-array and antiideal is 0-array. (By default forceideal = False)
+>
+> **display**: logical argument to indicate whether to show print convergence messages or not. (By default display = False)
 
 ### Output
 
 Dictionary which contains three keys.
-  * **Ranking**: List with R_min and R_max scores in regard of the optimal weights, plus the uwTOPSIS score.
-  * **Weights_min**: List with the weights that minimizes the R score.
-  * **Weights_max**: List with the weights that maximizes the R score.
-  
-## Usage
+> **Ranking**: List with R_min and R_max scores in regard of the optimal weights, plus the uwTOPSIS score.
+>
+> **Weights_min**: List with the weights that minimizes the R score.
+>
+> **Weights_max**: List with the weights that maximizes the R score.
+
+## Example
 
 uwTOPSIS is implemented in order to manage **Pandas** DataFrames as input data which will be converted to **NumPy** arrays. Here is an example based on the paper abovementioned (V. Liern et. al 2020), in which we only use three alternatives and four criteria:
 
@@ -70,4 +92,4 @@ The output of the function is a dictionary whose entries are Ranking, Weights_mi
 
 ## Optimization in Python
 
-This library uses the [minimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html) function of the scipy.optimize module to carry out the optimization problems. In particular, _R<sub>L_ and _R<sub>U_ are obtained one by one, thus we can compute the gradient and apply the __SLSQP__ method.
+This library uses the [minimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html) function of the scipy.optimize module to carry out the optimization problems. In particular, R_L and R_U are obtained one by one, thus we can compute the gradient and apply the __SLSQP__ method.
