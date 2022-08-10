@@ -95,7 +95,7 @@ The output of the function is a dictionary whose entries are `Ranking`, `Weights
 Given than uwTOPSIS generalizes TOPSIS, we can also compute it by limiting the amplitude of the boundaries. For this function, it is recommende to use the Numpy numerical epsilon as difference between _l_ and _u_. Here is an example:
 
 ```python
-weights = np.array([0.1, 0.2, 0.2, 0.1, 0.3, 0.1])
+weights = np.array([0.25, 0.2, 0.2, 0.35])
 epsilon = np.finfo(float).eps
 
 try:
