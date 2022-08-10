@@ -1,13 +1,13 @@
-# Unweighted TOPSIS method
+# Un-Weighted TOPSIS method
 
 ![python-version](https://img.shields.io/badge/python->=3.8-green.svg)
 [![pypi-version](https://img.shields.io/pypi/v/uwtopsis.svg)](https://pypi.python.org/pypi/uwtopsis/)
 ![license](https://img.shields.io/pypi/l/uwtopsis.svg)
-[![Downloads](https://static.pepy.tech/personalized-badge/uwtopsis?period=total&units=international_system&left_color=grey&right_color=orange&left_text=Downloads)](https://pepy.tech/project/uwtopsis)
+[![Downloads](https://static.pepy.tech/personalized-badge/uwtopsis?period=total&units=none&left_color=grey&right_color=orange&left_text=Downloads)](https://pepy.tech/project/uwtopsis)
 
 The Un-Weighted Technique for Order Preference by Similarity to Ideal Solution (uwTOPSIS) ranks decision alternatives based on the classical TOPSIS approach, however this method does not require the introduction of a priori weights.
 
-As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (PIS) and a negative ideal solution (NIS) varies depending on the conditions of problem. Hence, the function of relative proximity (R) is an operator which are optimized as two mathematical programming problems of maximize (R_L) and minimize (R_U), considering weights as ariables. Finally, per each alternative, we get the intervals [R_L, R_U] so we can rank them in accordance with a determined comparison method.
+As a consequence of working with unknown weights, the method does not take into account the relative importance of criteria. Then, the positive ideal solution (_PIS_) and a negative ideal solution (_NIS_) varies depending on the conditions of problem. Hence, the function of relative proximity (_R_) is an operator which are optimized as two mathematical programming problems of maximize (_R_L_) and minimize (_R_U_), considering weights as ariables. Finally, per each alternative, we get the intervals [_R_L_, _R_U_] so we can rank them in accordance with a determined comparison method.
 
 For a better understanding about either the algorithm or the method, please check:
 
@@ -80,16 +80,41 @@ data = pd.DataFrame({"c1":[173, 176, 142],
                      "c3":[11.4, 12.3, 8.2],
                      "c4":[10.01, 10.48, 7.3]})
 directions = ["max", "max", "min", "min"]
-L = np.array([0.1 for _ in range(data.shape[1])])
-U = np.array([0.4 for _ in range(data.shape[1])])
+L = np.repeat(0.1, data.shape[1])
+U = np.repeat(0.4, data.shape[1])
 norm = "euclidean"
 p = 2
 
 x = uwTOPSIS(data, directions, L, U, norm, p)
 ```
 
-The output of the function is a dictionary whose entries are Ranking, Weights_min, and, Weights_max. Besides, Ranking entry is another dictionary with the arguments R_min, R_max, and, uwTOPSIS. The Weights_min and Weights_max output contains the arrays with the optimal solution of each alternative as minimize and maximize respectively.
+The output of the function is a dictionary whose entries are `Ranking`, `Weights_min`, and `Weights_max`. Besides, `Ranking` entry is another dictionary with the arguments _R_min_, _R_max_, and, _uwTOPSIS_. The `Weights_min` and `Weights_max` output contains the arrays with the optimal solution of each alternative as minimize and maximize respectively.
+
+### Generalization to classic TOPSIS
+
+Given than uwTOPSIS generalizes TOPSIS, we can also compute it by limiting the amplitude of the boundaries. For this function, it is recommende to use the Numpy numerical epsilon as difference between _l_ and _u_. Here is an example:
+
+```python
+weights = np.array([0.1, 0.2, 0.2, 0.1, 0.3, 0.1])
+epsilon = np.finfo(float).eps
+
+try:
+  x = uwTOPSIS(data,
+               directions, 
+               weights, 
+               weights + epsilon, 
+               norm,
+               p)
+except:
+  x = uwTOPSIS(data,
+               directions, 
+               weights - epsilon, 
+               weights, 
+               norm,
+               p)
+```
+
 
 ## Optimization in Python
 
-This library uses the [minimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html) function of the scipy.optimize module to carry out the optimization problems. In particular, R_L and R_U are obtained one by one, thus we can compute the gradient and apply the __SLSQP__ method.
+This library uses the [minimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html) function of the scipy.optimize module to carry out the optimization problems. In particular, _R_L_ and _R_U_ are obtained one by one, thus we can compute the gradient and apply the __SLSQP__ method.
