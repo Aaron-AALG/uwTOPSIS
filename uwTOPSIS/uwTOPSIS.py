@@ -1,10 +1,14 @@
-import pandas as pd
-from numpy import *
+import numpy as np
 import scipy.optimize as opt
 from scipy.spatial.distance import minkowski, chebyshev
 
-def requirements(data, directions, L, U, norm, p, w0, forceideal, display):
-    
+def uwTOPSIS_requirements(data, directions, L, U, norm, p, forceideal, display):
+    '''
+    UW-TOPSIS requirements
+    ---------------------
+
+    Checks whether the input parameters satisfy the UW-TOPSIS hypothesis.
+    '''
     # data requirements
     if len(data.shape) < 2:
         raise ValueError('[!] data must be matrix-shaped.')
@@ -18,8 +22,8 @@ def requirements(data, directions, L, U, norm, p, w0, forceideal, display):
         raise ValueError('[!] Optimal directions must be either "max" or "min".')
     
     # norm requirements
-    if norm not in ["euclidean", "gauss", "minmax", "none"]:
-        raise ValueError('[!] The normalization method must be either "euclidean", "gauss", "minmax", or "none".')
+    if norm not in ["euclidean", "minmax", "none"]:
+        raise ValueError('[!] The normalization method must be either "euclidean", "minmax", or "none".')
     
     # p requirements
     if not any([p >= 1, p == "max"]):
@@ -30,7 +34,7 @@ def requirements(data, directions, L, U, norm, p, w0, forceideal, display):
         raise ValueError('[!] Number of lower bounds must be equal to the number of criteria.')
     if any([l < 0 or l > 1 for l in L]):
         raise ValueError('[!] Lower bounds must belong to [0,1].')
-    if sum(L) > 1:
+    if np.sum(L) > 1:
         raise ValueError('[!] The sum of lower bounds must be less than 1.')
     
     # U requirements
@@ -38,17 +42,8 @@ def requirements(data, directions, L, U, norm, p, w0, forceideal, display):
         raise ValueError('[!] Number of upper bounds must be equal to the number of criteria.')
     if any([u < 0 or u > 1 for u in U]):
         raise ValueError('[!] Upper bounds must belong to [0,1].')
-    if sum(U) < 1:
+    if np.sum(U) < 1:
         raise ValueError('[!] The sum of upper bounds must be greater than 1.')
-    
-    # w0 requirements
-    if len(w0) > 0:
-        if len(w0) != data.shape[1]:
-            raise ValueError('[!] Length of initial weight must be equal to the number of criteria.')
-        if all([w < 0 for w in w0]) and all([w > 1 for w in w0]):
-            raise ValueError('[!] Initial weights must belong to [0,1].')
-        if abs(sum(w0) - 1) > 10**(-6):
-            raise ValueError('[!] Initial weights must sum 1.')
     
     # forceideal requirements
     if int(forceideal) not in [0,1]:
@@ -57,140 +52,250 @@ def requirements(data, directions, L, U, norm, p, w0, forceideal, display):
     # display requirements
     if int(display) not in [0,1]:
         raise ValueError('[!] "display" must be boolean.')
-    
     return
 
-def normalization(data, norm):
+def data_normalization(data, norm):
+    '''
+    Normalization of the decision matrix
+    ------------------
+
+    Normalize the decision matrix
+    '''
     if norm == 'euclidean':
-        data_norm = data.apply(lambda x: x/linalg.norm(x))
+        data_normalized = np.apply_along_axis(lambda x: x/np.sum(x**2)**0.5,
+                                        axis = 0,
+                                        arr = data)
     elif norm == 'minmax':
-        data_norm = data.apply(lambda x: (x-min(x))/(max(x)-min(x)))
-    elif norm == 'gauss':
-        data_norm = data.apply(lambda x: 1/(std(x)*sqrt(2*pi))*exp(-1/2*((x-mean(x))/std(x))**2))
+        data_normalized = np.apply_along_axis(lambda x: (x - np.min(x))/(np.max(x) - np.min(x)),
+                                        axis = 0,
+                                        arr = data)
     elif norm == 'none':
-        data_norm = data
-    return data_norm
+        data_normalized = data
+    return data_normalized
 
-def get_ideals(data, directions, forceideal, J):
+def get_ideal_solutions(data, directions, forceideal, J):
+    '''
+    Extraction of the ideal solutions
+    ----------------
+
+    Get the Positive (PIS) and Negative (NIS) ideal solutions.
+    '''
     if forceideal:
-        Ideal = [int(i == 'max') for i in directions]
-        Antiideal = [int(i == 'min') for i in directions]
+        # Solutions are binary vectors
+        PIS = np.array([i == 'max' for i in directions]).astype("int")
+        NIS = np.array([i == 'min' for i in directions]).astype("int")
     else:
-        pos_max = [int(i == 'max') for i in directions]
-        pos_min = [int(i == 'min') for i in directions]
-        col_max = data.apply(lambda z: max(z))
-        col_min = data.apply(lambda z: min(z))
-        Ideal = array(col_max)*array(pos_max) + array(col_min)*array(pos_min)
-        Antiideal = array(col_max)*(1-array(pos_max)) + array(col_min)*(1-array(pos_min))
-    return Ideal, Antiideal
+        # The ideal solutions are composed of the "best possible" attributes in data
+        # Position of max/min directions of criteria
+        column_idx_max = np.array([i == 'max' for i in directions]).astype("int")
+        column_idx_min = np.array([i == 'min' for i in directions]).astype("int")
+        # Values associated to max/min positions
+        column_value_max = data.max(axis = 0)
+        column_value_min = data.min(axis = 0)
+        # PIS and NIS solutions
+        PIS = column_value_max * column_idx_max + column_value_min * column_idx_min
+        NIS = column_value_max * (1 - column_idx_max) + column_value_min * (1 - column_idx_min)
+    return PIS, NIS
 
-def distance(x, v, p):
+def separation_measure(x, v, p):
+    '''
+    Distance function that defines the relative proximity index
+    -----------------------------------------------------------
+    '''
     if p == 'max':
         d = chebyshev(x, v)
     else:
         d = minkowski(x, v, p)
     return d
 
-def R(data, Ideal, Antiideal, p):
-    d_Ideal = array([distance(x, Ideal, p) for x in data])
-    d_Antiideal = array([distance(x, Antiideal, p) for x in data])
-    R = d_Antiideal/(d_Ideal + d_Antiideal)
-    return R
+def R_score(data, PIS, NIS, p):
+    '''
+    Relative proximity index (R-score) of TOPSIS
+    -----------------
 
-def R_i(w, data, Ideal, Antiideal, p, i, optimal_mode, J):
-    data_norm = w*data
-    Ideal = array(w)*Ideal
-    Antiideal = array(w)*Antiideal
-    r = R(data_norm, Ideal, Antiideal, p)
+    Relative proximity index to the ideal solutions
+    '''
+    # Compute separation measures
+    distance_PIS = np.array([separation_measure(x, PIS, p) for x in data])
+    distance_NIS = np.array([separation_measure(x, NIS, p) for x in data])
+    # Compute the relative proximity index
+    R_index = distance_NIS / (distance_PIS + distance_NIS)
+    return R_index
+
+def uwTOPSIS_objective_function(weights, data, PIS, NIS, p, i, optimal_mode, J):
+    '''
+    Objective function of the R-score for the UW-TOPSIS
+    -------------
+
+    R-score for the ith alternative in order to optimize it for the UW-TOPSIS method.
+    '''
+    #
+    weights = np.array(weights)
+    # Weight the decision matrix and the ideal solutions
+    data_weighted = weights * data
+    PIS_weighted  = weights * PIS
+    NIS_weighted  = weights * NIS
+    # Compute the relative proximity index
+    r = R_score(data_weighted, PIS_weighted, NIS_weighted, p)
+    # Determine the optimality
     if optimal_mode == 'min':
         r_i = r[i]
     else:
         r_i = -r[i]
     return r_i
 
-def R_gradient(w, data, Ideal, Antiideal, p, i, optimal_mode, J):
-    d_Ideal = array(distance(data[i], Ideal, p))
-    d_Antiideal = array(distance(data[i], Antiideal, p))
-    gradient = []
-    for k in range(J):
-        d_Ideal_partial = w[k]*(Ideal[k]-data[i][k])**2/d_Ideal
-        d_Antiideal_partial = w[k]*(Antiideal[k]-data[i][k])**2/d_Antiideal
-        gradient.append((d_Antiideal_partial*(d_Ideal+d_Antiideal)-d_Antiideal*(d_Ideal_partial+d_Antiideal_partial))/((d_Ideal+d_Antiideal)**2))
-    return gradient
+def create_initial_guess(x, L, U, PIS, NIS, optimal_mode):
+    '''
+    Create initial weighting scheme  to initialize the optimization
+    ---------
 
-def optimize_TOPSIS(data, Ideal, Antiideal, p, L, U, optimal_mode, display, I, J):
-    
+    Create a synthetic weighting scheme (w0) for the initialization of `opt.minimize` function
+    '''
+    # Initialize as lower bounds
+    w0 = np.copy(L)
+    # Absolute distances regarding PIS and NIS
+    abs_dist_PIS = np.abs(x - PIS)
+    abs_dist_NIS = np.abs(x - NIS)
+    relative_proximity = abs_dist_NIS / (abs_dist_PIS + abs_dist_NIS)
+    idx_relative_proximity = np.argsort(relative_proximity)
+    # Get max/min indices regarding relative distance
+    idx_max_0 = idx_relative_proximity[-1]
+    idx_max_1 = idx_relative_proximity[-2]
+    idx_min_0 = idx_relative_proximity[0]
+    idx_min_1 = idx_relative_proximity[1]
+    if optimal_mode == 'max':
+        w0[idx_max_0] = U[idx_max_0]
+        w0[idx_max_1] = 1 - w0.sum() + w0[idx_max_1]
+    if optimal_mode == 'min':
+        w0[idx_min_0] = U[idx_min_0]
+        w0[idx_min_1] = 1 - w0.sum() + w0[idx_min_1]
+    # Normalize the initial guess (just in case)
+    w0 /= w0.sum()
+    return w0
+
+def optimize_TOPSIS(data, PIS, NIS, p, L, U, optimal_mode, display, I, J):
+    '''
+    Optimize the R-score of the TOPSIS technique
+    --------------------------------------------
+
+    Optimization (min/max) of the R-score per each alternative.
+    '''
+    # Define bounds and constraints of the optimization problem
     bounds = [(l,u) for l, u in zip(L, U)]
     constraints = ({'type': 'ineq', 'fun': lambda w: 1-sum(w)},
                    {'type': 'ineq', 'fun': lambda w: sum(w)-1},)
-    
     # Optimizing the R-score according to the optimal_mode
     r = []
     w = []
     for i in range(I):
-        id_max = argmax(abs(data[i]-Antiideal))
-        id_min = argmin(abs(data[i]-Antiideal))
-        w0 = 1/(J-2)*(1-L-U)
-        if optimal_mode == 'max':
-            w0[id_max] = U[id_max]
-            w0[id_min] = L[id_min]
-        if optimal_mode == 'min':
-            w0[id_max] = L[id_max]
-            w0[id_min] = U[id_min]
-        # For Bounded-Constrained problems, we may apply either L-BFGS_B, Powell or TNC methods
-        opt_i = opt.minimize(fun = R_i,
+        # Initial guess for the i-th alternative
+        w0 = create_initial_guess(data[i], L, U, PIS, NIS, optimal_mode)
+        # Optimize the R[i] scores
+        opt_i = opt.minimize(fun = uwTOPSIS_objective_function,
                             x0 = w0,
-                            jac = R_gradient,
-                            args = (data, Ideal, Antiideal, p, i, optimal_mode, J),
-                            method = 'SLSQP',
+                            args = (data, PIS, NIS, p, i, optimal_mode, J),
+                            method = 'SLSQP', # SLSQP, COBYLA, trust-constr
                             bounds = bounds,
                             constraints =  constraints,
-                            tol = 10**(-8),
-                            options = {'disp': display})
+                            # tol = 10**(-8),
+                            options = {'disp': display},
+                            )
         if optimal_mode == 'max':
             opt_i.fun = -opt_i.fun
         r.append(opt_i.fun)
         w.append(opt_i.x)
     return r, w
 
-def uwTOPSIS(data, directions, L, U, norm = "euclidean", p = 2, w0=[], alpha = 1/2, forceideal = False, display = False):
+def uwTOPSIS(data,
+             directions,
+             L,
+             U,
+             norm = "euclidean",
+             p = 2,
+             alpha = 1/2,
+             forceideal = False,
+             display = False):
     """
-    uwTOPSIS method
+    UW-TOPSIS: UnWeighted TOPSIS technique
+    ==============================
+
     Input:
+    -------
         data: dataframe which contains the alternatives and the criteria.
-        directions: array with the optimal direction of the criteria.
+        directions: array with the optimal direction of the criteria, whether "max" or "min".
         L: array with the lower bounds of the weigths.
         U: array with the upper bounds of the weigths.
         norm: normalization method for the data, whether "euclidean", "gauss", "minmax", "none".
         p: integer value for the L-p distance.
-        w0: array with the initial guess of the weights.
         alpha: value of the convex lineal combination of the uwTOPSIS score.
-        forceideal: logical argument to indicate whether to force the ideal solution. If true, ideal solution is 1-array and antiideal is 0-array.
+        forceideal: logical argument to indicate whether to force the ideal solution. If true, ideal solution (PIS) is a np.ones-array and antiideal is np.zeros-array.
         display: logical argument to indicate whether to show print convergence messages or not.
+        
     Output:
+    -------
         Dictionary which contains three keys.
             Ranking: List with R_min and R_max scores in regard of the optimal weights, plus the uwTOPSIS score.
             Weights_min: List with the weights that minimizes the R score.
             Weights_max: List with the weights that maximizes the R score.
     """
     # Check whether the data input verifies the basic requirements
-    requirements(data, directions, L, U, norm, p, w0, forceideal, display)
+    data = np.array(data)
+    uwTOPSIS_requirements(data, directions, L, U, norm, p, forceideal, display)
     
     # 1st step: Normalize data
-    I = len(data.index)
-    J = len(data.columns)
-    data_norm = normalization(data, norm)
+    I, J = data.shape
+    data_normalized = data_normalization(data, norm)
 
-    # 2nd step: Compute the Ideal, Antiideal elements
-    Ideal, Antiideal = get_ideals(data_norm, directions, forceideal, J)
+    # 2nd step: Compute the PIS and NIS elements
+    PIS, NIS = get_ideal_solutions(data_normalized, directions, forceideal, J)
     
-    # 3rd step: Optimize R score
-    r_min, w_min = optimize_TOPSIS(array(data_norm), Ideal, Antiideal, p, L, U, 'min', display, I, J)
-    r_max, w_max = optimize_TOPSIS(array(data_norm), Ideal, Antiideal, p, L, U, 'max', display, I, J)
-    uwTOPSIS = [(1-alpha)*m + alpha*M for m, M in zip(r_min,r_max)]
+    # 3rd step: Optimize the relative proximity index (R-score)
+    r_min, w_min = optimize_TOPSIS(data_normalized, PIS, NIS, p, L, U, 'min', display, I, J)
+    r_max, w_max = optimize_TOPSIS(data_normalized, PIS, NIS, p, L, U, 'max', display, I, J)
+    uwTOPSIS = [(1-alpha) * m + alpha * M for m, M in zip(r_min, r_max)]
     
-    # Output prepation
+    # Output of UW-TOPSIS
     scores = {'R_min': r_min, 'R_max': r_max, 'uwTOPSIS': uwTOPSIS}
     output_uwTOPSIS = {'Ranking': scores, 'Weights_min': w_min, 'Weights_max': w_max}
 
     return output_uwTOPSIS
+
+def TOPSIS(data,
+            directions,
+            weights,
+            norm = "euclidean",
+            p = 2,
+            forceideal = False):
+    """
+    TOPSIS technique
+    ========================
+
+    Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS) is a
+    multi-criteria decision analysis method developed by Hwang and Yoon in 1981.
+
+    Input:
+    -------
+        data: dataframe which contains the alternatives and the criteria.
+        directions: array with the optimal direction of the criteria, whether "max" or "min".
+        weights: array with the weighting scheme.
+        norm: normalization method for the data, whether "euclidean", "gauss", "minmax", "none".
+        p: integer value for the L-p distance.
+        forceideal: logical argument to indicate whether to force the ideal solution. If true, ideal solution (PIS) is a np.ones-array and antiideal is np.zeros-array.
+
+    Output:
+    -------
+        Relative proximity index vector of the TOPSIS.
+    """
+    # 1st step: Normalize and weight the data
+    data = np.array(data)
+    I, J = data.shape
+    data_normalized = data_normalization(data, norm)
+    data_normalized_weighted = weights * data_normalized
+
+    # 2nd step: Compute the PIS and NIS elements
+    PIS, NIS = get_ideal_solutions(data_normalized_weighted, directions, forceideal, J)
+
+    # 3rd step: Compute the relative proximity index (R-score)
+    topsis = R_score(data_normalized_weighted, PIS, NIS, p)
+
+    return topsis
